@@ -1,5 +1,14 @@
-/* eslint-disable radix */
-const slipHelper = require("./slip39_helper.js");
+import { MIN_ENTROPY_BITS } from "./constants";
+import { ISlip39ConstructorOptions } from "./interfaces";
+import {
+  combineMnemonics,
+  crypt,
+  encodeMnemonic,
+  generateIdentifier,
+  splitSecret,
+  validateMnemonic,
+} from "./slip39_helper";
+import { bitsToBytes, generateArray } from "./utils";
 
 const MAX_DEPTH = 2;
 
@@ -9,6 +18,11 @@ const MAX_DEPTH = 2;
  * For children nodes, description refers to the group e.g. "Family group: mom, dad, sister, wife"
  */
 class Slip39Node {
+  public mnemonic: string;
+  public readonly index: number;
+  public children: Slip39Node[];
+  public description: string;
+
   constructor(index = 0, description = "", mnemonic = "", children = []) {
     this.index = index;
     this.description = description;
@@ -16,38 +30,56 @@ class Slip39Node {
     this.children = children;
   }
 
-  get mnemonics() {
+  get mnemonics(): string[] {
     if (this.children.length === 0) {
       return [this.mnemonic];
     }
-    const result = this.children.reduce((prev, item) => {
+    return this.children.reduce((prev: string[], item) => {
       return prev.concat(item.mnemonics);
     }, []);
-    return result;
   }
 }
 
 //
-// The javascript implementation of the SLIP-0039: Shamir's Secret-Sharing for Mnemonic Codes
+// Implementation of the SLIP-0039: Shamir's Secret-Sharing for Mnemonic Codes
 // see: https://github.com/satoshilabs/slips/blob/master/slip-0039.md)
 //
-class Slip39 {
+export class Slip39 {
+  public readonly extendableBackupFlag: number;
+  public readonly groupCount: number;
+  public readonly groupThreshold: number;
+  public readonly identifier: number[];
+  public readonly iterationExponent: number;
+  public root = new Slip39Node();
+
   constructor({
     iterationExponent = 0,
     extendableBackupFlag = 0,
     identifier,
     groupCount,
     groupThreshold,
-  } = {}) {
+  }: ISlip39ConstructorOptions) {
     this.iterationExponent = iterationExponent;
     this.extendableBackupFlag = extendableBackupFlag;
+
+    if (identifier.length === 0) {
+      throw new Error("Missing required parameter identifier");
+    }
     this.identifier = identifier;
+
+    if (!groupCount) {
+      throw new Error("Missing required parameter groupCount");
+    }
     this.groupCount = groupCount;
+
+    if (!groupThreshold) {
+      throw new Error("Missing required parameter groupThreshold");
+    }
     this.groupThreshold = groupThreshold;
   }
 
-  static fromArray(
-    masterSecret,
+  static async fromArray(
+    masterSecret: number[],
     {
       passphrase = "",
       threshold = 1,
@@ -56,10 +88,10 @@ class Slip39 {
       extendableBackupFlag = 1,
       title = "My default slip39 shares",
     } = {},
-  ) {
-    if (masterSecret.length * 8 < slipHelper.MIN_ENTROPY_BITS) {
+  ): Promise<Slip39> {
+    if (masterSecret.length * 8 < MIN_ENTROPY_BITS) {
       throw Error(
-        `The length of the master secret (${masterSecret.length} bytes) must be at least ${slipHelper.bitsToBytes(slipHelper.MIN_ENTROPY_BITS)} bytes.`,
+        `The length of the master secret (${String(masterSecret.length)} bytes) must be at least ${String(bitsToBytes(MIN_ENTROPY_BITS))} bytes.`,
       );
     }
 
@@ -77,11 +109,11 @@ class Slip39 {
 
     if (threshold > groups.length) {
       throw Error(
-        `The requested group threshold (${threshold}) must not exceed the number of groups (${groups.length}).`,
+        `The requested group threshold (${String(threshold)}) must not exceed the number of groups (${String(groups.length)}).`,
       );
     }
 
-    groups.forEach((item) => {
+    groups.forEach((item: any) => {
       if (item[0] === 1 && item[1] > 1) {
         throw Error(
           `Creating multiple member shares with member threshold 1 is not allowed. Use 1-of-1 member sharing instead. ${groups.join()}`,
@@ -89,7 +121,7 @@ class Slip39 {
       }
     });
 
-    const identifier = slipHelper.generateIdentifier();
+    const identifier = generateIdentifier();
 
     const slip = new Slip39({
       iterationExponent: iterationExponent,
@@ -99,7 +131,7 @@ class Slip39 {
       groupThreshold: threshold,
     });
 
-    const encryptedMasterSecret = slipHelper.crypt(
+    const encryptedMasterSecret = await crypt(
       masterSecret,
       passphrase,
       iterationExponent,
@@ -107,57 +139,64 @@ class Slip39 {
       extendableBackupFlag,
     );
 
-    const root = slip.buildRecursive(
+    slip.root = await slip.buildRecursive(
       new Slip39Node(0, title),
       groups,
       encryptedMasterSecret,
       threshold,
     );
-
-    slip.root = root;
     return slip;
   }
 
-  buildRecursive(currentNode, nodes, secret, threshold, index) {
+  async buildRecursive(
+    currentNode: Slip39Node,
+    nodes: (number | string)[][],
+    secret: number[],
+    threshold: number,
+    index?: number,
+  ): Promise<Slip39Node> {
     // It means it's a leaf.
     if (nodes.length === 0) {
-      const mnemonic = slipHelper.encodeMnemonic(
+      currentNode.mnemonic = encodeMnemonic(
         this.identifier,
         this.extendableBackupFlag,
         this.iterationExponent,
-        index,
+        index || 0,
         this.groupThreshold,
         this.groupCount,
         currentNode.index,
         threshold,
         secret,
       );
-
-      currentNode.mnemonic = mnemonic;
       return currentNode;
     }
 
-    const secretShares = slipHelper.splitSecret(
-      threshold,
-      nodes.length,
-      secret,
-    );
-    let children = [];
+    const secretShares = await splitSecret(threshold, nodes.length, secret);
+    let children: Slip39Node[] = [];
     let idx = 0;
 
-    nodes.forEach((item) => {
+    for (const item of nodes) {
+      if (
+        item.length < 2 ||
+        typeof item[0] !== "number" ||
+        typeof item[1] !== "number"
+      ) {
+        throw new Error("Group array must contain two numbers");
+      }
+
       // n=threshold
       const n = item[0];
       // m=members
       const m = item[1];
       // d=description
-      const d = item[2] || "";
+      const d: string =
+        item.length > 2 && typeof item[2] === "string" ? item[2] : "";
 
       // Generate leaf members, means their `m` is `0`
-      const members = Array().slip39Generate(m, () => [n, 0, d]);
+      const members = generateArray([], m, () => [n, 0, d]) as number[][];
 
       const node = new Slip39Node(idx, d);
-      const branch = this.buildRecursive(
+      const branch = await this.buildRecursive(
         node,
         members,
         secretShares[idx],
@@ -167,20 +206,23 @@ class Slip39 {
 
       children = children.concat(branch);
       idx = idx + 1;
-    });
+    }
     currentNode.children = children;
     return currentNode;
   }
 
-  static recoverSecret(mnemonics, passphrase) {
-    return slipHelper.combineMnemonics(mnemonics, passphrase);
+  static async recoverSecret(
+    mnemonics: string[],
+    passphrase = "",
+  ): Promise<number[]> {
+    return combineMnemonics(mnemonics, passphrase);
   }
 
-  static validateMnemonic(mnemonic) {
-    return slipHelper.validateMnemonic(mnemonic);
+  static validateMnemonic(mnemonic: string): boolean {
+    return validateMnemonic(mnemonic);
   }
 
-  fromPath(path) {
+  fromPath(path: string): Slip39Node {
     this.validatePath(path);
 
     const children = this.parseChildren(path);
@@ -190,10 +232,10 @@ class Slip39 {
     }
 
     return children.reduce((prev, childNumber) => {
-      let childrenLen = prev.children.length;
+      const childrenLen = prev.children.length;
       if (childNumber >= childrenLen) {
         throw new Error(
-          `The path index (${childNumber}) exceeds the children index (${childrenLen - 1}).`,
+          `The path index (${String(childNumber)}) exceeds the children index (${String(childrenLen - 1)}).`,
         );
       }
 
@@ -201,7 +243,7 @@ class Slip39 {
     }, this.root);
   }
 
-  validatePath(path) {
+  validatePath(path: string): void {
     if (!path.match(/(^r)(\/\d{1,2}){0,2}$/)) {
       throw new Error('Expected valid path e.g. "r/0/0".');
     }
@@ -210,19 +252,16 @@ class Slip39 {
     const pathLength = depth.length - 1;
     if (pathLength > MAX_DEPTH) {
       throw new Error(
-        `Path\'s (${path}) max depth (${MAX_DEPTH}) is exceeded (${pathLength}).`,
+        `Path's (${path}) max depth (${String(MAX_DEPTH)}) is exceeded (${String(pathLength)}).`,
       );
     }
   }
 
-  parseChildren(path) {
+  parseChildren(path: string): number[] {
     const splitted = path.split("/").slice(1);
 
-    const result = splitted.map((pathFragment) => {
+    return splitted.map((pathFragment) => {
       return parseInt(pathFragment);
     });
-    return result;
   }
 }
-
-exports = module.exports = Slip39;

@@ -96,3 +96,5 @@ typings/
 .npmrc
 .lock-wscript
 package-lock.json*
+/.idea
+/dist

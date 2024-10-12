@@ -1,26 +1,55 @@
 {
   "name": "slip39",
   "version": "0.1.9",
-  "description": "The javascript implementation of the SLIP39 for Shamir's Secret-Sharing for Mnemonic Codes.",
-  "main": "index.js",
+  "description": "The typescript implementation of the SLIP39 for Shamir's Secret-Sharing for Mnemonic Codes.",
+  "main": "index.ts",
   "scripts": {
-    "test": "mocha"
+    "test": "yarn jest",
+    "check-fmt": "yarn prettier --check 'src/**/*.ts' 'test/**/*.ts'",
+    "fmt": "yarn prettier --write 'src/**/*.ts' 'test/**/*.ts'",
+    "lint": "yarn eslint .",
+    "build": "yarn tsc --build",
+    "clean": "yarn tsc --build --clean"
   },
-  "author": "Pal Dorogi \"iLap\" <pal.dorogi@gmail.com>",
+  "contributors": [
+    {
+      "name": "Pal Dorogi \"iLap\"",
+      "email": "pal.dorogi@gmail.com",
+      "url": "https://github.com/ilap/slip39-js"
+    },
+    {
+      "name": "Adrien Pujol",
+      "email": "adrien@splitsec.io",
+      "url": "https://splitsec.io"
+    }
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ilap/slip39-js.git"
+    "url": "git+https://github.com/splitsec-labs/slip39-ts.git"
   },
-  "keywords": [
-    "SLIP39",
-    "crypto",
-    "Shamir",
-    "Shamir's Secret Sharing",
-    "Shamir's secret-sharing scheme",
-    "SSS"
-  ],
+  "engines": {
+    "node": "^20.9.0 || ^22.2.0",
+    "yarn": ">=4.1.1 <5",
+    "npm": "Please use yarn instead of NPM to install dependencies"
+  },
   "devDependencies": {
-    "mocha": "^10.4.0"
+    "@types/jest": "^29.5.13",
+    "@types/node": "^22.7.5",
+    "@typescript-eslint/eslint-plugin": "^8.8.1",
+    "@typescript-eslint/parser": "^8.8.1",
+    "eslint": "^9.12.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.2.1",
+    "jest": "^29.7.0",
+    "prettier": "^3.3.3",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4",
+    "typescript-eslint": "^8.8.1"
+  },
+  "packageManager": "yarn@4.5.0",
+  "dependencies": {
+    "uncrypto": "^0.1.3"
   }
 }

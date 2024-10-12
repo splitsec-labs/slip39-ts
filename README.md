@@ -2,9 +2,9 @@
 
 [![npm](https://img.shields.io/npm/v/slip39.svg)](https://www.npmjs.org/package/slip39)
 
-The javascript implementation of the [SLIP39](https://github.com/satoshilabs/slips/blob/master/slip-0039.md) for Shamir's Secret-Sharing for Mnemonic Codes.
+The typescript implementation of the [SLIP39](https://github.com/satoshilabs/slips/blob/master/slip-0039.md) for Shamir's Secret-Sharing for Mnemonic Codes.
 
-The code based on my [Dart implementation of SLIP-0039](https://github.com/ilap/slip39-dart/).
+The code based on Pal's [Javascript implementation of SLIP-0039](https://github.com/ilap/slip39-js/).
 
 # DISCLAIMER
 
@@ -37,7 +37,7 @@ The group's first parameter is the `N` (group threshold) while the second is the
 ## Installing
 
 ```
-npm install slip39
+npm install slip39-ts
 
 ```
 

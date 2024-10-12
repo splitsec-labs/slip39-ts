@@ -1,18 +1,20 @@
-const slip39 = require("../src/slip39.js");
-const assert = require("assert");
+import { Slip39 } from "../src/slip39";
+
+import { decodeHexString, encodeHexString } from "../src/utils";
+
 // threshold (N) number of group-shares required to reconstruct the master secret.
 const groupThreshold = 2;
-const masterSecret = "ABCDEFGHIJKLMNOP".slip39EncodeHex();
+const masterSecret = encodeHexString("ABCDEFGHIJKLMNOP");
 const passphrase = "TREZOR";
 
-function recover(groupShares, pass) {
-  const recoveredSecret = slip39.recoverSecret(groupShares, pass);
-  console.log("\tMaster secret: " + masterSecret.slip39DecodeHex());
-  console.log("\tRecovered one: " + recoveredSecret.slip39DecodeHex());
-  assert(masterSecret.slip39DecodeHex() === recoveredSecret.slip39DecodeHex());
+async function recover(groupShares: string[], pass: string): Promise<void> {
+  const recoveredSecret = await Slip39.recoverSecret(groupShares, pass);
+  console.log("\tMaster secret: " + decodeHexString(masterSecret));
+  console.log("\tRecovered one: " + decodeHexString(recoveredSecret));
+  expect(decodeHexString(masterSecret)).toBe(decodeHexString(recoveredSecret));
 }
 
-function printShares(shares) {
+function printShares(shares: string[]) {
   shares.forEach((s, i) => console.log(`\t${i + 1}) ${s}`));
 }
 
@@ -41,7 +43,7 @@ const groups = [
   [2, 6, "Family group share for mom, dad, brother, sister and wife"],
 ];
 
-const slip = slip39.fromArray(masterSecret, {
+const slip = await Slip39.fromArray(masterSecret, {
   passphrase: passphrase,
   threshold: groupThreshold,
   groups: groups,
@@ -69,7 +71,7 @@ console.log(
   `\n* Shares used by Alice alone for restoring the master secret (total of ${requiredGroupShares.length} member-shares):`,
 );
 printShares(requiredGroupShares);
-recover(requiredGroupShares, passphrase);
+await recover(requiredGroupShares, passphrase);
 
 /*
  * Example of Case 2
@@ -89,7 +91,7 @@ console.log(
   `\n* Shares used by Alice + 3 friends for restoring the master secret (total of ${requiredGroupShares.length} member-shares):`,
 );
 printShares(requiredGroupShares);
-recover(requiredGroupShares, passphrase);
+await recover(requiredGroupShares, passphrase);
 
 /*
  * Example of Case 3
@@ -108,7 +110,7 @@ console.log(
   `\n* Shares used by Alice + 2 family members for restoring the master secret (total of ${requiredGroupShares.length} member-shares):`,
 );
 printShares(requiredGroupShares);
-recover(requiredGroupShares, passphrase);
+await recover(requiredGroupShares, passphrase);
 
 /*
  * Example of Case 4
@@ -130,4 +132,4 @@ console.log(
   `\n* Shares used by 3 friends + 2 family members for restoring the master secret (total of ${requiredGroupShares.length} member-shares):`,
 );
 printShares(requiredGroupShares);
-recover(requiredGroupShares, passphrase);
+await recover(requiredGroupShares, passphrase);
