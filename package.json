@@ -1,6 +1,6 @@
 {
-  "name": "slip39",
-  "version": "0.1.9",
+  "name": "slip39-ts",
+  "version": "0.1.10",
   "description": "The typescript implementation of the SLIP39 for Shamir's Secret-Sharing for Mnemonic Codes.",
   "main": "index.ts",
   "scripts": {
@@ -23,6 +23,9 @@
       "url": "https://splitsec.io"
     }
   ],
+  "files": [
+    "/dist"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -33,6 +36,14 @@
     "yarn": ">=4.1.1 <5",
     "npm": "Please use yarn instead of NPM to install dependencies"
   },
+  "keywords": [
+    "SLIP39",
+    "crypto",
+    "Shamir",
+    "Shamir's Secret Sharing",
+    "Shamir's secret-sharing scheme",
+    "SSS"
+  ],
   "devDependencies": {
     "@types/jest": "^29.5.13",
     "@types/node": "^22.7.5",

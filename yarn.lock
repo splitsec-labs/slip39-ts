@@ -4009,9 +4009,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"slip39@workspace:.":
+"slip39-ts@workspace:.":
   version: 0.0.0-use.local
-  resolution: "slip39@workspace:."
+  resolution: "slip39-ts@workspace:."
   dependencies:
     "@types/jest": "npm:^29.5.13"
     "@types/node": "npm:^22.7.5"
