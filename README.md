@@ -1,10 +1,15 @@
 # SLIP39
 
-[![npm](https://img.shields.io/npm/v/slip39.svg)](https://www.npmjs.org/package/slip39)
+[![npm](https://img.shields.io/npm/v/slip39-ts.svg)](https://www.npmjs.org/package/slip39-ts)
 
 The typescript implementation of the [SLIP39](https://github.com/satoshilabs/slips/blob/master/slip-0039.md) for Shamir's Secret-Sharing for Mnemonic Codes.
 
-The code based on Pal's [Javascript implementation of SLIP-0039](https://github.com/ilap/slip39-js/).
+This code is based on Pal's [Javascript implementation of SLIP-0039](https://github.com/ilap/slip39-js/)
+but includes the following modifications:
+
+* Ported from Javascript to Typescript
+* Now uses ESM (from CommonJS)
+* Migrated to WebCrypto (from Node crypto) for WebBrowser support
 
 # DISCLAIMER
 
@@ -46,11 +51,11 @@ npm install slip39-ts
 See `example/main.js`
 
 ```javascript
-const slip39 = require("../src/slip39.js");
-const assert = require("assert");
+import { Slip39, decodeHexString, encodeHexString } from "slip19-ts";
+
 // threshold (N) number of group shares required to reconstruct the master secret.
 const threshold = 2;
-const masterSecret = "ABCDEFGHIJKLMNOP".slip39EncodeHex();
+const masterSecret = encodeHexString("ABCDEFGHIJKLMNOP");
 const passphrase = "TREZOR";
 
 /**
@@ -71,7 +76,7 @@ const groups = [
   [2, 6],
 ];
 
-const slip = slip39.fromArray(masterSecret, {
+const slip = await Slip39.fromArray(masterSecret, {
   passphrase: passphrase,
   threshold: threshold,
   groups: groups,
@@ -90,10 +95,10 @@ const allShares = aliceShare.concat(familyShares);
 console.log("Shares used for restoring the master secret:");
 allShares.forEach((s) => console.log(s));
 
-const recoveredSecret = slip39.recoverSecret(allShares, passphrase);
-console.log("Master secret: " + masterSecret.slip39DecodeHex());
-console.log("Recovered one: " + recoveredSecret.slip39DecodeHex());
-assert(masterSecret.slip39DecodeHex() === recoveredSecret.slip39DecodeHex());
+const recoveredSecret = await Slip39.recoverSecret(allShares, passphrase);
+console.log("Master secret: " + decodeHexString(masterSecret));
+console.log("Recovered one: " + decodeHexString(recoveredSecret));
+assert(decodeHexString(masterSecret) === decodeHexString(recoveredSecret));
 ```
 
 ## Testing
