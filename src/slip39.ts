@@ -1,5 +1,5 @@
 import { MIN_ENTROPY_BITS } from "./constants";
-import { ISlip39ConstructorOptions } from "./interfaces";
+import { ISlip39, ISlip39ConstructorOptions, ISlip39Node } from "./interfaces";
 import {
   combineMnemonics,
   crypt,
@@ -17,13 +17,18 @@ const MAX_DEPTH = 2;
  * For root node, description refers to the whole set's title e.g. "Hardware wallet X SSSS shares"
  * For children nodes, description refers to the group e.g. "Family group: mom, dad, sister, wife"
  */
-class Slip39Node {
+class Slip39Node implements ISlip39Node {
   public mnemonic: string;
   public readonly index: number;
   public children: Slip39Node[];
   public description: string;
 
-  constructor(index = 0, description = "", mnemonic = "", children = []) {
+  constructor(
+    index = 0,
+    description = "",
+    mnemonic = "",
+    children: Slip39Node[] = [],
+  ) {
     this.index = index;
     this.description = description;
     this.mnemonic = mnemonic;
@@ -44,7 +49,7 @@ class Slip39Node {
 // Implementation of the SLIP-0039: Shamir's Secret-Sharing for Mnemonic Codes
 // see: https://github.com/satoshilabs/slips/blob/master/slip-0039.md)
 //
-export class Slip39 {
+export class Slip39 implements ISlip39 {
   public readonly extendableBackupFlag: number;
   public readonly groupCount: number;
   public readonly groupThreshold: number;
@@ -81,11 +86,12 @@ export class Slip39 {
   static async fromArray(
     masterSecret: number[],
     {
-      passphrase = "",
-      threshold = 1,
+      extendableBackupFlag = 1,
       groups = [[1, 1, "Default 1-of-1 group share"]],
       iterationExponent = 0,
-      extendableBackupFlag = 1,
+      identifier = generateIdentifier(),
+      passphrase = "",
+      groupThreshold = 1,
       title = "My default slip39 shares",
     } = {},
   ): Promise<Slip39> {
@@ -107,9 +113,9 @@ export class Slip39 {
       );
     }
 
-    if (threshold > groups.length) {
+    if (groupThreshold > groups.length) {
       throw Error(
-        `The requested group threshold (${String(threshold)}) must not exceed the number of groups (${String(groups.length)}).`,
+        `The requested group threshold (${String(groupThreshold)}) must not exceed the number of groups (${String(groups.length)}).`,
       );
     }
 
@@ -121,14 +127,12 @@ export class Slip39 {
       }
     });
 
-    const identifier = generateIdentifier();
-
     const slip = new Slip39({
       iterationExponent: iterationExponent,
       extendableBackupFlag: extendableBackupFlag,
       identifier: identifier,
       groupCount: groups.length,
-      groupThreshold: threshold,
+      groupThreshold: groupThreshold,
     });
 
     const encryptedMasterSecret = await crypt(
@@ -143,7 +147,7 @@ export class Slip39 {
       new Slip39Node(0, title),
       groups,
       encryptedMasterSecret,
-      threshold,
+      groupThreshold,
     );
     return slip;
   }

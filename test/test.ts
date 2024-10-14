@@ -1,5 +1,6 @@
-import { Slip39 } from "../src/slip39";
-import { decodeHexString, encodeHexString } from "../src/utils";
+import { Slip39 } from "../src";
+import { decodeHexString, encodeHexString } from "../src";
+// @ts-ignore
 import { getCombinations, shuffle } from "./test_utils";
 
 const MASTERSECRET = "ABCDEFGHIJKLMNOP";
@@ -13,12 +14,12 @@ let slip15NoPW: Slip39;
 beforeAll(async () => {
   slip15 = await Slip39.fromArray(MASTERSECRET_HEX, {
     passphrase: PASSPHRASE,
-    threshold: 1,
+    groupThreshold: 1,
     groups: ONE_GROUP,
   });
 
   slip15NoPW = await Slip39.fromArray(MASTERSECRET_HEX, {
-    threshold: 1,
+    groupThreshold: 1,
     groups: ONE_GROUP,
   });
 });
@@ -50,7 +51,7 @@ describe("Basic Tests", () => {
     });
   });
 
-  describe("Test passhrase", () => {
+  describe("Test passphrase", () => {
     it("should return valid mastersecret when user submits valid passphrase", async () => {
       let mnemonics = slip15.fromPath("r/0").mnemonics;
       expect(decodeHexString(MASTERSECRET_HEX)).toBe(
@@ -59,7 +60,7 @@ describe("Basic Tests", () => {
         ),
       );
     });
-    it("should NOT return valid mastersecret when user submits invalid passphrse", async () => {
+    it("should NOT return valid mastersecret when user submits invalid passphrase", async () => {
       let mnemonics = slip15.fromPath("r/0").mnemonics;
 
       expect(decodeHexString(MASTERSECRET_HEX)).not.toBe(
@@ -139,7 +140,7 @@ describe("Group Sharing Tests", () => {
 
     beforeAll(async () => {
       slip = await Slip39.fromArray(MASTERSECRET_HEX, {
-        threshold: 2,
+        groupThreshold: 2,
         groups: groups,
         title: "Trezor one SSSS",
       });
@@ -176,6 +177,13 @@ describe("Group Sharing Tests", () => {
   });
 });
 
+// The test vectors are given as a list of quadruples. The first element of the quadruple is a description of the
+// test vector, the second is a list of mnemonics, the third is the master secret which results from combining the
+// mnemonics, and the fourth is the BIP32 master extended private key derived from the master secret. The master
+// secret is encoded as a string containing two hexadecimal digits for each byte. If the string is empty, then
+// attempting to combine the given set of mnemonics should result in an error. The passphrase "TREZOR" is used for
+// all valid sets of mnemonics.
+//  https://github.com/trezor/python-shamir-mnemonic/blob/master/vectors.json
 describe("Original test vectors Tests", () => {
   let fs = require("fs");
   let path = require("path");
@@ -285,7 +293,7 @@ describe("Invalid Shares", () => {
       await expect(
         async () =>
           await Slip39.fromArray(secret, {
-            threshold: threshold,
+            groupThreshold: threshold,
             groups: groups,
           }),
       ).rejects.toThrow(errorMsg);
@@ -382,7 +390,7 @@ function itTestArray(t: number, g: number, gs: any[], e: number): void {
     let slip = await Slip39.fromArray(MASTERSECRET_HEX, {
       groups: gs.slice(0, g),
       passphrase: PASSPHRASE,
-      threshold: t,
+      groupThreshold: t,
       extendableBackupFlag: e,
     });
 

@@ -227,11 +227,13 @@ function interpolate(shares: Map<number, number[]>, x: number): number[] {
   }
 
   if (xCoord.has(x)) {
-    shares.forEach((v: number[], k: number) => {
+    shares.forEach((v: number[], k: number): number[] => {
       if (k === x) {
         return v;
       }
-      return;
+      throw new Error(
+        "Invalid set of shares. All share values must have the same length.",
+      );
     });
   }
 
@@ -244,7 +246,7 @@ function interpolate(shares: Map<number, number[]>, x: number): number[] {
 
   const results = generateArray(
     [],
-    sharesValueLengths.values().next().value!,
+    sharesValueLengths.values().next().value,
     () => 0,
   );
 
@@ -379,7 +381,7 @@ export async function recoverSecret(
 ): Promise<number[]> {
   // If the threshold is 1, then the digest of the shared secret is not used.
   if (threshold === 1) {
-    return shares.values().next().value!;
+    return shares.values().next().value;
   }
 
   const sharedSecret = interpolate(shares, SECRET_INDEX);
@@ -428,9 +430,8 @@ export async function combineMnemonics(
 
   const allShares = new Map<number, number[]>();
   for (const [groupIndex, members] of groups.entries()) {
-    //groups.forEach((members, groupIndex) => {
-    const threshold = members.keys().next().value!;
-    const shares = members.values().next().value!;
+    const threshold = members.keys().next().value;
+    const shares = members.values().next().value;
     if (shares.size !== threshold) {
       const prefix = groupPrefix(
         identifier,
@@ -448,7 +449,6 @@ export async function combineMnemonics(
     const recovered = await recoverSecret(threshold, shares);
     allShares.set(groupIndex, recovered);
   }
-  //});
 
   const ems = await recoverSecret(groupThreshold, allShares);
   const id = intToIndices(BigInt(identifier), ITERATION_EXP_WORDS_LENGTH, 8);
@@ -469,7 +469,7 @@ function decodeMnemonics(mnemonics: string[]): IDecodedMnemonics {
   const iterationExponents = new Set<number>();
   const groupThresholds = new Set<number>();
   const groupCounts = new Set<number>();
-  const groups: IDecodedMnemonics["groups"] = new Map();
+  const groups = new Map<number, Map<number, Map<number, number[]>>>();
 
   mnemonics.forEach((mnemonic) => {
     const decoded = decodeMnemonic(mnemonic);
@@ -530,11 +530,11 @@ function decodeMnemonics(mnemonics: string[]): IDecodedMnemonics {
   }
 
   return {
-    identifier: identifiers.values().next().value!,
-    extendableBackupFlag: extendableBackupFlags.values().next().value!,
-    iterationExponent: iterationExponents.values().next().value!,
-    groupThreshold: groupThresholds.values().next().value!,
-    groupCount: groupCounts.values().next().value!,
+    identifier: identifiers.values().next().value,
+    extendableBackupFlag: extendableBackupFlags.values().next().value,
+    iterationExponent: iterationExponents.values().next().value,
+    groupThreshold: groupThresholds.values().next().value,
+    groupCount: groupCounts.values().next().value,
     groups,
   };
 }

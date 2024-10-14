@@ -1,3 +1,19 @@
+export interface ISlip39 {
+  extendableBackupFlag: number;
+  groupCount: number;
+  groupThreshold: number;
+  identifier: number[];
+  iterationExponent: number;
+  root: ISlip39Node;
+}
+
+export interface ISlip39Node {
+  mnemonic: string;
+  index: number;
+  children: ISlip39Node[];
+  description: string;
+}
+
 export interface IDecodedMnemonics {
   extendableBackupFlag: number;
   groupCount: number;
