@@ -70,6 +70,9 @@ export class Slip39 implements ISlip39 {
     if (identifier.length === 0) {
       throw new Error("Missing required parameter identifier");
     }
+    if (identifier.length !== 2) {
+      throw new Error("Identifier parameter length must be 2");
+    }
     this.identifier = identifier;
 
     if (!groupCount) {

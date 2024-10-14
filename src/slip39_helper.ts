@@ -50,7 +50,7 @@ async function roundFunction(
   const iterations = (ITERATION_COUNT << exp) / ROUND_COUNT;
 
   return subtle
-    .importKey("raw", Buffer.from(roundedPhrase), "PBKDF2", false, [
+    .importKey("raw", new Uint8Array(roundedPhrase), "PBKDF2", false, [
       "deriveBits",
     ])
     .then((key) => {
@@ -67,7 +67,7 @@ async function roundFunction(
     })
     .then((derived: ArrayBuffer) => {
       // TODO: Can we use a Uint8Array instead of a Buffer here?
-      return Array.prototype.slice.call(Buffer.from(derived), 0);
+      return Array.prototype.slice.call(new Uint8Array(derived), 0);
     });
 }
 
@@ -127,7 +127,7 @@ export async function createDigest(
         new Uint8Array(sharedSecret),
       );
       signature = signature.slice(0, 4);
-      return Array.prototype.slice.call(Buffer.from(signature), 0);
+      return Array.prototype.slice.call(new Uint8Array(signature), 0);
     });
 }
 

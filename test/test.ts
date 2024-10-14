@@ -51,6 +51,29 @@ describe("Basic Tests", () => {
     });
   });
 
+  it("Test constructor parameters", async () => {
+    const slip = await Slip39.fromArray(MASTERSECRET_HEX, {
+      groupThreshold: 1,
+      iterationExponent: 1,
+      identifier: [1, 2],
+      groups: [[3, 5, "Group 0"]],
+    });
+
+    // console.log(JSON.stringify(slip, null, 2));
+    // console.log(slip.root.children[0].children[0].mnemonic.split(" ").length);
+    let mnemonics = slip.fromPath("r/0").mnemonics;
+    let recoveredSecret = await Slip39.recoverSecret(mnemonics.slice(0, 3));
+    expect(MASTERSECRET).toBe(String.fromCharCode(...recoveredSecret));
+  });
+
+  it("Invalid identifier parameter should throw", async () => {
+    await expect(async () => {
+      await Slip39.fromArray(MASTERSECRET_HEX, {
+        identifier: [1, 2, 3, 4],
+      });
+    }).rejects.toThrow("Identifier parameter length must be 2");
+  });
+
   describe("Test passphrase", () => {
     it("should return valid mastersecret when user submits valid passphrase", async () => {
       let mnemonics = slip15.fromPath("r/0").mnemonics;
