@@ -58,7 +58,7 @@ async function roundFunction(
         {
           name: "PBKDF2",
           hash: "SHA-256",
-          salt: Buffer.from(saltedSecret),
+          salt: new Uint8Array(saltedSecret),
           iterations: iterations,
         },
         key,
